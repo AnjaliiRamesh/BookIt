@@ -286,3 +286,69 @@ export const removeAttendee = async (req: AuthenticatedRequest, res: Response): 
     res.status(500).json({ message: 'Internal server error processing removal', error });
   }
 };
+
+// FETCH COMPREHENSIVE ORGANIZER PLATFORM METRICS
+export const getOrganizerAnalytics = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+  try {
+    const organizerId = req.user?.userId;
+
+    if (!organizerId) {
+      res.status(401).json({ message: 'Unauthorized: Organizer identity missing' });
+      return;
+    }
+
+    // 1. Fetch all events owned by this organizer, including confirmed booking arrays
+    const events = await prisma.event.findMany({
+      where: { organizerId },
+      include: {
+        bookings: {
+          where: { status: 'CONFIRMED' }
+        }
+      }
+    });
+
+    // 2. Compute high-level operational statistics
+    let totalRevenue = 0;
+    let totalTicketsSold = 0;
+    let totalOverallCapacity = 0;
+
+    const eventBreakdown = events.map(event => {
+      const ticketsSold = event.capacity - event.availableSeats;
+      const revenue = ticketsSold * event.price;
+
+      totalTicketsSold += ticketsSold;
+      totalRevenue += revenue;
+      totalOverallCapacity += event.capacity;
+
+      return {
+        eventId: event.id,
+        title: event.title,
+        ticketsSold,
+        capacity: event.capacity,
+        revenueGenerated: revenue
+      };
+    });
+
+    // Calculate overall occupancy/attendance velocity safely
+    const attendanceRate = totalOverallCapacity > 0 
+      ? parseFloat(((totalTicketsSold / totalOverallCapacity) * 100).toFixed(2))
+      : 0;
+
+    // 3. Dispatch structured payload response
+    res.status(200).json({
+      summary: {
+        totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+        totalTicketsSold,
+        totalOverallCapacity,
+        averageAttendanceRate: `${attendanceRate}%`
+      },
+      eventsBreakdown: eventBreakdown
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Internal server error compiling analytics dashboard metrics', 
+      error: error instanceof Error ? error.message : error 
+    });
+  }
+};

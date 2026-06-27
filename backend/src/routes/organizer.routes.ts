@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createEvent, editEvent, getOrganizerEvents, getEventAttendees, removeAttendee } from '../controllers/organizer.controller';
+import { createEvent, editEvent, getOrganizerEvents, getEventAttendees, removeAttendee, getOrganizerAnalytics } from '../controllers/organizer.controller';
 import { authenticateToken, requireRole } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -7,6 +7,7 @@ const router = Router();
 router.use(authenticateToken);
 router.use(requireRole('ORGANIZER'));
 
+router.get('/analytics', getOrganizerAnalytics);
 router.post('/events', createEvent);
 router.put('/events/:id', editEvent);
 router.get('/events', getOrganizerEvents);
