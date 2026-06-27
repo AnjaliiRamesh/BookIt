@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../Lib/api';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../Lib/api';
 import { Mail, Lock, Eye, EyeOff, User, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function AuthPage() {
