@@ -41,13 +41,16 @@ model User {
   @@map("users")
 }
 
+
+
 model Event {
   id             String    @id @default(uuid())
   title          String
   slug           String    @unique
   description    String
   date           DateTime
-  location       String
+  location       String    // This acts as our venue field!
+  price          Float     @default(0.0) // <-- ADD THIS LINE HERE!
   capacity       Int
   availableSeats Int
   organizerId    String
@@ -59,7 +62,6 @@ model Event {
   bookings       Booking[]
   activityLogs   ActivityLog[]
 
-  // Performance Indexes for fast queries
   @@index([date])
   @@index([organizerId])
   @@map("events")
