@@ -73,4 +73,123 @@ export const getAllEvents = async (req: Request, res: Response): Promise<void> =
       error: error instanceof Error ? error.message : error 
     });
   }
+
+  
+};
+
+// Add this right next to your existing getAllEvents controller!
+// export const getEventDetails = async (req: Request, res: Response): Promise<void> => {
+//   try {
+//     const { idOrSlug } = req.params;
+
+//     // 1. Look up the event item by checking BOTH id and unique slug paths
+//     const event = await prisma.event.findFirst({
+//       where: {
+//         OR: [
+//           { id: idOrSlug },
+//           { slug: idOrSlug }
+//         ]
+//       },
+//       include: {
+//         organizer: { select: { name: true, email: true } }
+//       }
+//     });
+
+//     // 2. Security Check: If no event matches, throw a clean 404 error
+//     if (!event) {
+//       res.status(404).json({ message: 'Requested Event was not found on this platform' });
+//       return;
+//     }
+
+//     // 3. BACKGROUND WORKER METRIC: Create an internal event view log row asynchronously
+//     // Notice we do NOT use "await" here so we don't slow down the user's page loading time!
+//     prisma.activityLog.create({
+//       data: {
+//         eventId: event.id,
+//         action: 'EVENT_VIEW',
+//         metadata: { timestamp: new Date(), platform: 'web' }
+//       }
+//     }).catch(err => console.error('Non-blocking activity log write failed:', err));
+
+//     // 4. Send the formatted single item bundle back to the user
+//     res.status(200).json({
+//       id: event.id,
+//       title: event.title,
+//       slug: event.slug,
+//       description: event.description,
+//       dateTime: event.date,
+//       venue: event.location,
+//       price: event.price,
+//       seatsRemaining: event.availableSeats,
+//       isSoldOut: event.availableSeats <= 0,
+//       organizer: {
+//         name: event.organizer.name,
+//         email: event.organizer.email
+//       }
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({ 
+//       message: 'Internal server error while retrieving event data fields', 
+//       error: error instanceof Error ? error.message : error 
+//     });
+//   }
+// };
+
+export const getEventDetails = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Force idOrSlug to be a clean, safe, singular string
+    const idOrSlug = String(req.params.idOrSlug);
+
+    // 1. Look up the event item by checking BOTH id and unique slug paths
+    const event = await prisma.event.findFirst({
+      where: {
+        OR: [
+          { id: idOrSlug },
+          { slug: idOrSlug }
+        ]
+      },
+      include: {
+        organizer: { select: { name: true, email: true } }
+      }
+    });
+
+    // 2. Security Check: If no event matches, throw a clean 404 error
+    if (!event || !event.organizer) {
+      res.status(404).json({ message: 'Requested Event was not found on this platform' });
+      return;
+    }
+
+    // 3. BACKGROUND WORKER METRIC: Create an internal event view log row asynchronously
+    prisma.activityLog.create({
+      data: {
+        eventId: event.id,
+        action: 'EVENT_VIEW',
+        metadata: { timestamp: new Date(), platform: 'web' }
+      }
+    }).catch(err => console.error('Non-blocking activity log write failed:', err));
+
+    // 4. Send the formatted single item bundle back to the user
+    res.status(200).json({
+      id: event.id,
+      title: event.title,
+      slug: event.slug,
+      description: event.description,
+      dateTime: event.date,
+      venue: event.location,
+      price: event.price,
+      seatsRemaining: event.availableSeats,
+      isSoldOut: event.availableSeats <= 0,
+      organizer: {
+        name: event.organizer.name,
+        email: event.organizer.email
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Internal server error while retrieving event data fields', 
+      error: error instanceof Error ? error.message : error 
+    });
+  }
 };
