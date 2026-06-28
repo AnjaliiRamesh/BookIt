@@ -81,6 +81,7 @@ model Booking {
   event     Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
   // Indexes
+  @@unique([userId, eventId])
   @@index([userId])
   @@index([eventId])
   @@map("bookings")

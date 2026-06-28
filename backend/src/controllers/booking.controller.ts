@@ -80,6 +80,16 @@ export const createBooking = async (req: AuthenticatedRequest, res: Response): P
       return;
     }
 
+  // Prisma unique constraint violation code
+  if (error.code === 'P2002') {
+    res.status(400).json({ 
+      success: false, 
+      message: "Duplicate booking rejected. You have already reserved a ticket pass for this experience." 
+    });
+    return;
+    
+  }
+
     res.status(500).json({ 
       message: 'Internal server error while processing booking request', 
       error: error instanceof Error ? error.message : error 
