@@ -9,3 +9,17 @@ node_modules
 /src/generated/prisma
 
 .node_modules
+
+# Dependencies
+**/node_modules/
+
+# Next.js
+.next/
+**/.next/
+
+# Environment
+.env.local
+
+# Build
+dist/
+build/
